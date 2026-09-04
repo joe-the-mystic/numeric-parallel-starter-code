@@ -15,8 +15,8 @@
 //#define IMG_HEIGHT (300)
 //#define IMG_WIDTH (400)
 
-#define IMG_HEIGHT (3000)
-#define IMG_WIDTH (4000)
+#define IMG_HEIGHT (960)
+#define IMG_WIDTH (1280)
 
 #define HEADER_SIZE (40)
 
@@ -58,13 +58,14 @@ int main(int argc, char *argv[])
     UINT64 microsecs=0, millisecs=0;
     FLOAT temp, fstart, fnow;
     struct timespec start, now;
+    int thread_count = atoi(argv[3]);
 
     clock_gettime(CLOCK_MONOTONIC, &start);
     fstart = (FLOAT)start.tv_sec  + (FLOAT)start.tv_nsec / 1000000000.0;
     
     if(argc < 3)
     {
-       printf("Usage: sharpen input_file.ppm output_file.ppm\n");
+       printf("Usage: sharpen input_file.ppm output_file.ppm num_threads\n");
        exit(-1);
     }
     else
@@ -148,6 +149,7 @@ int main(int argc, char *argv[])
     for(iter=0; iter < ITERATIONS; iter++)
     {
         // Skip first and last row, no neighbors to convolve with
+#pragma omp parallel for num_threads(thread_count) collapse(3)
         for(i=1; i<((IMG_HEIGHT)-1); i++)
         {
 
