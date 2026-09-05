@@ -11,10 +11,6 @@
 #include <fcntl.h>
 #include <time.h>
 
-
-//#define IMG_HEIGHT (300)
-//#define IMG_WIDTH (400)
-
 #define IMG_HEIGHT (960)
 #define IMG_WIDTH (1280)
 
@@ -54,18 +50,18 @@ FLOAT PSF[9] = {-K/F, -K/F, -K/F, -K/F, K+1.0, -K/F, -K/F, -K/F, -K/F};
 
 int main(int argc, char *argv[])
 {
-    int fdin, fdout, bytesRead=0, bytesWritten=0, bytesLeft, i, j, iter, rc, pixel, readcnt=0, writecnt=0;
+    int fdin, fdout, bytesRead=0, bytesWritten=0, bytesLeft, rc, pixel, readcnt=0, writecnt=0;
     UINT64 microsecs=0, millisecs=0;
-    FLOAT temp, fstart, fnow;
+    FLOAT fstart, fnow;
     struct timespec start, now;
-    int thread_count = atoi(argv[3]);
+    int thread_count = 1;
 
     clock_gettime(CLOCK_MONOTONIC, &start);
     fstart = (FLOAT)start.tv_sec  + (FLOAT)start.tv_nsec / 1000000000.0;
     
-    if(argc < 3)
+    if(argc < 4)
     {
-       printf("Usage: sharpen input_file.ppm output_file.ppm num_threads\n");
+       printf("Usage: sharpen input_file.ppm output_file.ppm thread_count\n");
        exit(-1);
     }
     else
@@ -80,6 +76,10 @@ int main(int argc, char *argv[])
         if((fdout = open(argv[2], (O_RDWR | O_CREAT), 0666)) < 0)
         {
             printf("Error opening %s\n", argv[1]);
+        }
+
+        if(atoi(argv[3]) > 0) {
+            thread_count = atoi(argv[3]);
         }
         //else
         //    printf("Output file=%s opened successfully\n", "sharpen.ppm");
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
     printf("END: read %d, bytesRead=%d, bytesLeft=%d\n", readcnt, bytesRead, bytesLeft);
 
     // create in memory copy from input by channel
-    for(i=0, pixel=0; i<IMG_HEIGHT*IMG_WIDTH; i++, pixel+=3)
+    for(int i=0, pixel=0; i<IMG_HEIGHT*IMG_WIDTH; i++, pixel+=3)
     {
         R[i]=RGB[pixel+0]; convR[i]=R[i];
         G[i]=RGB[pixel+1]; convG[i]=G[i];
@@ -146,17 +146,17 @@ int main(int argc, char *argv[])
     fnow = (FLOAT)now.tv_sec  + (FLOAT)now.tv_nsec / 1000000000.0;
     printf("\nstart test at %lf\n", fnow-fstart);
 
-    for(iter=0; iter < ITERATIONS; iter++)
+#pragma omp parallel for num_threads(thread_count) collapse(3)
+    for(int iter=0; iter < ITERATIONS; iter++)
     {
         // Skip first and last row, no neighbors to convolve with
-#pragma omp parallel for num_threads(thread_count) collapse(3)
-        for(i=1; i<((IMG_HEIGHT)-1); i++)
+        for(int i=1; i<((IMG_HEIGHT)-1); i++)
         {
 
             // Skip first and last column, no neighbors to convolve with
-            for(j=1; j<((IMG_WIDTH)-1); j++)
+            for(int j=1; j<((IMG_WIDTH)-1); j++)
             {
-                temp=0;
+                FLOAT temp=0;
                 temp += (PSF[0] * (FLOAT)R[((i-1)*IMG_WIDTH)+j-1]);
                 temp += (PSF[1] * (FLOAT)R[((i-1)*IMG_WIDTH)+j]);
                 temp += (PSF[2] * (FLOAT)R[((i-1)*IMG_WIDTH)+j+1]);
@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
 #ifdef FAST_IO
 
     // create in memory copy from input by channel
-    for(i=0, pixel=0; i<IMG_HEIGHT*IMG_WIDTH; i++, pixel+=3)
+    for(int i=0, pixel=0; i<IMG_HEIGHT*IMG_WIDTH; i++, pixel+=3)
     {
         RGB[pixel+0]=convR[i];
         RGB[pixel+1]=convG[i];
