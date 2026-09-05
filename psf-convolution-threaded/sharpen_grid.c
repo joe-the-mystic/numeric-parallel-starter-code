@@ -14,12 +14,8 @@
 // This could be simplified into horizontal slices (rows) of the 1D (or 2D version) of the image array.
 //
 
-#define IMG_HEIGHT (3000)
-#define IMG_WIDTH (4000)
-
-//#define IMG_HEIGHT (300)
-//#define IMG_WIDTH (400)
-
+#define IMG_HEIGHT (960)
+#define IMG_WIDTH (1280)
 
 // Scheme to index by simple row threads, ignoring number of columns
 //#define NUM_ROW_THREADS (1)
@@ -66,7 +62,7 @@
 
 #define HEADER_SIZE (40)
 
-#define SHARPEN_GRID_ITERATIONS (900)  // Number of times threads are created to process one image
+#define SHARPEN_GRID_ITERATIONS (90)  // Number of times threads are created to process one image
 
 #define FAST_IO
 
